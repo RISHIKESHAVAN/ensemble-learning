@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 .DS_Store
+
+data/cleaned_raghu_file.csv
+data/df_for_models.csv
