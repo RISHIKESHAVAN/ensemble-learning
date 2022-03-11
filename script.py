@@ -19,6 +19,7 @@ from sklearn.model_selection import GridSearchCV
 from xgboost.sklearn import XGBClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
+import lightgbm as lgb
 
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
@@ -352,6 +353,22 @@ def xg_boost_classifier(X_train, X_test, y_train, y_test):
 
     return xgb_accuracy, xgb_f1
 
+def lightgbm_classifier(X, y):
+    '''
+    LIGHT GBM
+    '''
+    pgrid = {"max_samples":[i/10 for i in range(1,11,3)],
+            "max_features":[i/10 for i in range(1,11,4)],
+            "n_estimators":[100,150,200],
+            "learning_rate":[0.01,0.05,0.1],
+            "reg_lambda" = [i/10.0 for i in range(0,11,3)]}
+
+    clf =lgb.LGBMClassifier(objective='multiclass',metric='multi_logloss')
+    grid_search = GridSearchCV(clf, param_grid=pgrid, scoring='f1_micro', cv=10,verbose=3)
+    grid_search.fit(X, y)
+    # print(grid_search.best_params_)
+    return grid_search.best_estimator_.score(X_test, y_test)
+
 def run(tweets):
     '''
     Main function that should be called with the tweets dataframe.
@@ -398,8 +415,24 @@ def run(tweets):
     rf_a_b, rf_f1_b = random_forest_classifier(X_bin_train, X_bin_test, y_bin_train, y_bin_test)
 
     # xg boost
-    rf_a_m, rf_f1_m = xg_boost_classifier(X_train, X_test, y_train, y_test)
-    rf_a_b, rf_f1_b = xg_boost_classifier(X_bin_train, X_bin_test, y_bin_train, y_bin_test)
+    xg_a_m, xg_f1_m = xg_boost_classifier(X_train, X_test, y_train, y_test)
+    xg_a_b, xg_f1_b = xg_boost_classifier(X_bin_train, X_bin_test, y_bin_train, y_bin_test)
+
+    # light gbm
+    lgbm_f1_m = lightgbm_classifier(X, Y)
+    lgbm_f1_b = lightgbm_classifier(X_bin, Y_bin)
+
+    print("Decision Tree: Multi Classification F1 Score = ", dt_f1_m)
+    print("Random Forest: Multi Classification F1 Score = ", rf_f1_m)
+    print("XGBoost: Multi Classification F1 Score = ", xg_f1_m)
+    print("Light GBM: Multi Classification F1 Score = ", lgbm_f1_m)
+
+    print("Decision Tree: Binary Classification F1 Score = ", dt_f1_b)
+    print("Random Forest: Binary Classification F1 Score = ", rf_f1_b)
+    print("XGBoost: Binary Classification F1 Score = ", xg_f1_b)
+    print("Light GBM: Binary Classification F1 Score = ", lgbm_f1_b)
+
+
 
 # import the dataset
 tweets = pd.read_csv("../data/cyberbullying_tweets.csv")
